@@ -1,6 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
-  
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+  <flow name="name1"></flow>
+  <flow name="PDFPurchaseOrderFlow">
+    <sftp:listener doc:name="Listen for PDFs" config-ref="SFTP_Config" directory="/pdf-directory" />
+    <idp:extract-purchase-order-info doc:name="Extract Purchase Order Info" />
+    <sap:create-purchase-order doc:name="Create Purchase Order" config-ref="SAP_Config" />
+  </flow>
 </mule>
