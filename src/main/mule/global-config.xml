@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sap="http://www.mulesoft.org/schema/mule/sap"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/sap http://www.mulesoft.org/schema/mule/sap/current/mule-sap.xsd">
+
+	<!-- Configuration Properties -->
+	<configuration-properties file="config-${mule.env}.properties" doc:name="Configuration properties" />
+	
+	<!-- Global Configuration Elements -->
+	
+	<!-- HTTP Listener Configuration -->
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config">
+		<http:listener-connection host="${http.host}" port="${http.port}" />
+	</http:listener-config>
+	
+	<!-- HTTP Request Configuration for IDP -->
+	<http:request-config name="IDP_HTTP_Request_config" doc:name="IDP HTTP Request config">
+		<http:request-connection host="${idp.host}" port="${idp.port}" protocol="${idp.protocol}" />
+	</http:request-config>
+	
+	<!-- File Configuration -->
+	<file:config name="File_Config" doc:name="File Config">
+		<file:connection workingDir="${file.working.dir}" />
+	</file:config>
+	
+	<!-- SFTP Configuration -->
+	<sftp:config name="SFTP_Config" doc:name="SFTP Config">
+		<sftp:connection host="${sftp.host}" port="${sftp.port}" username="${sftp.username}" password="${sftp.password}" />
+	</sftp:config>
+	
+	<!-- SAP Configuration -->
+	<sap:config name="SAP_Config" doc:name="SAP Config">
+		<sap:connection asHost="${sap.host}" 
+						sysnr="${sap.system.number}" 
+						client="${sap.client}" 
+						user="${sap.username}" 
+						password="${sap.password}" 
+						lang="${sap.language}" />
+	</sap:config>
+
+</mule>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+	<!-- Global Error Handler -->
+	<error-handler name="global-error-handler" doc:name="Global Error Handler">
+		
+		<!-- File System Errors -->
+		<on-error-propagate type="FILE:ILLEGAL_PATH" doc:name="File Illegal Path">
+			<logger level="ERROR" doc:name="Log Error" message="File path error: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "FILE_PATH_ERROR",
+	message: "Invalid file path provided",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">400</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+		<on-error-propagate type="FILE:ACCESS_DENIED" doc:name="File Access Denied">
+			<logger level="ERROR" doc:name="Log Error" message="File access denied: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "FILE_ACCESS_DENIED",
+	message: "Access denied to file system",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">403</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+		<!-- HTTP Connectivity Errors -->
+		<on-error-propagate type="HTTP:CONNECTIVITY" doc:name="HTTP Connectivity">
+			<logger level="ERROR" doc:name="Log Error" message="HTTP connectivity error: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "CONNECTION_ERROR",
+	message: "Unable to connect to external service",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">503</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+		<on-error-propagate type="HTTP:TIMEOUT" doc:name="HTTP Timeout">
+			<logger level="ERROR" doc:name="Log Error" message="HTTP timeout error: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "TIMEOUT_ERROR",
+	message: "Request timeout occurred",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">408</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+		<!-- SAP Errors -->
+		<on-error-propagate type="SAP:CONNECTIVITY" doc:name="SAP Connectivity">
+			<logger level="ERROR" doc:name="Log Error" message="SAP connectivity error: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "SAP_CONNECTION_ERROR",
+	message: "Unable to connect to SAP system",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">503</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+		<!-- Transformation Errors -->
+		<on-error-propagate type="MULE:TRANSFORMATION" doc:name="Transformation Error">
+			<logger level="ERROR" doc:name="Log Error" message="Data transformation error: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "TRANSFORMATION_ERROR",
+	message: "Data transformation failed",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">422</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+		<!-- Generic Error Handler -->
+		<on-error-propagate type="ANY" doc:name="Any Error">
+			<logger level="ERROR" doc:name="Log Error" message="Unexpected error: #[error.description]" />
+			<ee:transform doc:name="Error Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "INTERNAL_ERROR",
+	message: "An unexpected error occurred",
+	timestamp: now(),
+	correlationId: correlationId
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus">500</ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		
+	</error-handler>
+
+</mule>

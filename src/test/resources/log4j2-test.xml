@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%-5p %d [%t] %c: %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <!-- Reduce startup noise during tests -->
+        <Logger name="com.mulesoft.mule.runtime.plugin" level="WARN"/>
+        <Logger name="org.mule.maven.client" level="WARN"/>
+        <Logger name="org.mule.runtime.core.internal.util" level="WARN"/>
+        <Logger name="org.quartz" level="WARN"/>
+        <Logger name="org.mule.mvel2.util.ExpressionHelper" level="WARN"/>
+        
+        <!-- Test specific logging -->
+        <Logger name="org.mule.test" level="INFO"/>
+        
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>

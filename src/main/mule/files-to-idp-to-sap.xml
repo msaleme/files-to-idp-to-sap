@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sap="http://www.mulesoft.org/schema/mule/sap"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sap http://www.mulesoft.org/schema/mule/sap/current/mule-sap.xsd">
+
+	<!-- Main Integration Flow -->
+	<flow name="files-to-idp-to-sap-main-flow" doc:name="Files to IDP to SAP Main Flow">
+		
+		<!-- File Listener - Polls for new files -->
+		<file:listener doc:name="Listen for Files" config-ref="File_Config" directory="${file.input.dir}" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="${file.polling.frequency}" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+			<file:matcher filenamePattern="*.csv,*.xml,*.json" />
+			<file:watermark-enabled value="true" />
+		</file:listener>
+		
+		<!-- Log incoming file -->
+		<logger level="INFO" doc:name="Log File Processing Start" message="Processing file: #[attributes.fileName] - Size: #[attributes.size] bytes" />
+		
+		<!-- Set correlation ID for tracking -->
+		<set-variable value="#[uuid()]" doc:name="Set Correlation ID" variableName="correlationId" />
+		
+		<!-- Store original payload -->
+		<set-variable value="#[payload]" doc:name="Store Original Payload" variableName="originalPayload" />
+		
+		<!-- File Processing Sub-flow -->
+		<flow-ref doc:name="Process File Content" name="process-file-content-subflow" />
+		
+		<!-- IDP Authentication and Processing Sub-flow -->
+		<flow-ref doc:name="Authenticate with IDP" name="idp-authentication-subflow" />
+		
+		<!-- SAP Integration Sub-flow -->
+		<flow-ref doc:name="Send to SAP" name="sap-integration-subflow" />
+		
+		<!-- Archive processed file -->
+		<flow-ref doc:name="Archive File" name="archive-file-subflow" />
+		
+		<!-- Success Response -->
+		<ee:transform doc:name="Success Response">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "SUCCESS",
+	message: "File processed successfully",
+	fileName: attributes.fileName,
+	processedAt: now(),
+	correlationId: vars.correlationId
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		
+		<logger level="INFO" doc:name="Log Processing Complete" message="File processing completed: #[payload.fileName]" />
+		
+		<error-handler ref="global-error-handler" />
+		
+	</flow>
+	
+	<!-- Process File Content Sub-flow -->
+	<sub-flow name="process-file-content-subflow" doc:name="Process File Content Sub-flow">
+		
+		<choice doc:name="File Type Choice">
+			<when expression="#[attributes.fileName endsWith '.csv']">
+				<flow-ref doc:name="Process CSV" name="process-csv-subflow" />
+			</when>
+			<when expression="#[attributes.fileName endsWith '.xml']">
+				<flow-ref doc:name="Process XML" name="process-xml-subflow" />
+			</when>
+			<when expression="#[attributes.fileName endsWith '.json']">
+				<flow-ref doc:name="Process JSON" name="process-json-subflow" />
+			</when>
+			<otherwise>
+				<raise-error doc:name="Unsupported File Type" description="File type not supported" type="CUSTOM:UNSUPPORTED_FILE_TYPE" />
+			</otherwise>
+		</choice>
+		
+	</sub-flow>
+	
+	<!-- Process CSV Sub-flow -->
+	<sub-flow name="process-csv-subflow" doc:name="Process CSV Sub-flow">
+		<ee:transform doc:name="CSV to JSON">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var csvData = payload as String
+---
+// CSV parsing logic will be implemented based on specific file format
+{
+	fileType: "CSV",
+	data: csvData,
+	processedAt: now()
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	
+	<!-- Process XML Sub-flow -->
+	<sub-flow name="process-xml-subflow" doc:name="Process XML Sub-flow">
+		<ee:transform doc:name="XML to JSON">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	fileType: "XML",
+	data: payload,
+	processedAt: now()
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	
+	<!-- Process JSON Sub-flow -->
+	<sub-flow name="process-json-subflow" doc:name="Process JSON Sub-flow">
+		<ee:transform doc:name="Validate and Transform JSON">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	fileType: "JSON",
+	data: payload,
+	processedAt: now()
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	
+	<!-- IDP Authentication Sub-flow -->
+	<sub-flow name="idp-authentication-subflow" doc:name="IDP Authentication Sub-flow">
+		
+		<!-- Authenticate with IDP -->
+		<http:request method="POST" doc:name="IDP Authentication" config-ref="IDP_HTTP_Request_config" path="${idp.auth.path}">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json",
+	"Accept" : "application/json"
+}]]]></http:headers>
+			<http:body><![CDATA[#[output application/json
+---
+{
+	username: p('secure::idp.username'),
+	password: p('secure::idp.password'),
+	client_id: p('secure::idp.client.id')
+}]]]></http:body>
+		</http:request>
+		
+		<!-- Extract access token -->
+		<set-variable value="#[payload.access_token]" doc:name="Set Access Token" variableName="accessToken" />
+		
+		<!-- Send processed data to IDP -->
+		<http:request method="POST" doc:name="Send Data to IDP" config-ref="IDP_HTTP_Request_config" path="${idp.data.path}">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json",
+	"Authorization" : "Bearer " ++ vars.accessToken
+}]]]></http:headers>
+			<http:body><![CDATA[#[payload]]]></http:body>
+		</http:request>
+		
+		<logger level="INFO" doc:name="Log IDP Response" message="IDP response: #[payload]" />
+		
+	</sub-flow>
+	
+	<!-- SAP Integration Sub-flow -->
+	<sub-flow name="sap-integration-subflow" doc:name="SAP Integration Sub-flow">
+		
+		<!-- Transform data for SAP -->
+		<ee:transform doc:name="Transform for SAP">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns0 urn:sap-com:document:sap:rfc:functions
+---
+{
+	ns0#"Z_CUSTOM_FUNCTION": {
+		IMPORT: {
+			// Map IDP response to SAP function parameters
+			IV_DATA: payload.data,
+			IV_SOURCE: "IDP_INTEGRATION",
+			IV_CORRELATION_ID: vars.correlationId
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		
+		<!-- Call SAP Function -->
+		<sap:execute doc:name="Execute SAP Function" config-ref="SAP_Config" key="Z_CUSTOM_FUNCTION">
+			<sap:definition><![CDATA[<Z_CUSTOM_FUNCTION>
+				<import>
+					<IV_DATA type="String">#[payload.Z_CUSTOM_FUNCTION.IMPORT.IV_DATA]</IV_DATA>
+					<IV_SOURCE type="String">#[payload.Z_CUSTOM_FUNCTION.IMPORT.IV_SOURCE]</IV_SOURCE>
+					<IV_CORRELATION_ID type="String">#[payload.Z_CUSTOM_FUNCTION.IMPORT.IV_CORRELATION_ID]</IV_CORRELATION_ID>
+				</import>
+			</Z_CUSTOM_FUNCTION>]]></sap:definition>
+		</sap:execute>
+		
+		<logger level="INFO" doc:name="Log SAP Response" message="SAP response: #[payload]" />
+		
+	</sub-flow>
+	
+	<!-- Archive File Sub-flow -->
+	<sub-flow name="archive-file-subflow" doc:name="Archive File Sub-flow">
+		
+		<!-- Move file to archive directory -->
+		<file:move doc:name="Archive Processed File" config-ref="File_Config" 
+				   sourcePath="#[attributes.fileName]" 
+				   targetPath="#['${file.archive.dir}/' ++ attributes.fileName ++ '_' ++ now() as String {format: 'yyyyMMdd_HHmmss'}]" />
+		
+		<logger level="INFO" doc:name="Log File Archived" message="File archived: #[attributes.fileName]" />
+		
+	</sub-flow>
+	
+	<!-- Health Check Flow -->
+	<flow name="health-check-flow" doc:name="Health Check Flow">
+		<http:listener doc:name="Health Check Listener" config-ref="HTTP_Listener_config" path="/health" />
+		
+		<ee:transform doc:name="Health Response">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "UP",
+	timestamp: now(),
+	service: "files-to-idp-to-sap",
+	version: "1.0.0"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		
+		<error-handler ref="global-error-handler" />
+	</flow>
+
+</mule>
