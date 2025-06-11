@@ -1,49 +1,66 @@
-.tooling-project
-
-# ------------------------------------------------------------------------------ #
-# Java defaults (https://github.com/github/gitignore/blob/master/Java.gitignore) #
-# ------------------------------------------------------------------------------ #
-*.class
-
-# Package Files #
+# Mule Application
+*.zip
 *.jar
-*.war
-*.ear
+target/
+**/.mule/**
+**/.studio/**
 
-# ------------------------------------------------------------------------------------------- #
-# Eclipse-specific (https://github.com/github/gitignore/blob/master/Global/Eclipse.gitignore) #
-# ------------------------------------------------------------------------------------------- #
-*.pydevproject
+# IDE
 .metadata
-bin/**
-tmp/**
-tmp/**/*
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.settings/
-.loadpath
+.idea/
+*.iml
+*.ipr
+*.iws
 .project
 .classpath
+.settings/
+.vscode/
 
-# External tool builders
-.externalToolBuilders/
-
-# Locally stored "Eclipse launch configurations"
-*.launch
-
-# CDT-specific
-.cproject
-
-# PDT-specific
-.buildpath
-
-# --------------- #
-# Studio-specific #
-# --------------- #
-target/
-.mule/
+# OS
 .DS_Store
-velocity.log
+Thumbs.db
+*.log
+
+# Maven
+dependency-reduced-pom.xml
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# MUnit
+.munit/
+**/test-output/
+**/test-results/
+
+# Security
+**/secure-properties/
+**/certificates/
+**/*.p12
+**/*.jks
+**/*.keystore
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.temp
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Environment specific
+**/config-local.properties
+**/local.properties
+
+# Archive
+**/archive/
+**/processed/
+**/error/
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# Runtime
+.mule/
