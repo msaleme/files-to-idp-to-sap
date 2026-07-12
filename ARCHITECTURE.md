@@ -295,6 +295,9 @@ graph LR
 
 ### Non-Functional Requirements
 
+> These are **design targets** for the reference pattern, not measured results from a production deployment.
+
+
 | Attribute | Target | Measurement |
 |-----------|--------|-------------|
 | **Availability** | 99.9% | Uptime monitoring |

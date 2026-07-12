@@ -321,4 +321,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ using MuleSoft Anypoint Platform**
 
-*This integration solution follows enterprise-grade patterns and is production-ready for mission-critical business processes.*
+*This is a reference integration template illustrating enterprise integration patterns. It is not a certified or production-validated deployment — validate independently before any production use.*
